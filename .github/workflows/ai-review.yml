@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  - name: AI Review via Gemini
+  name: AI Review via Gemini
         id: ai_review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
