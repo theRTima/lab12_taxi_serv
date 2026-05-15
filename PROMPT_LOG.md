@@ -37,7 +37,7 @@ with get_db override. Cover: auth (register, login, bad credentials),
 role guards (admin/client/driver access), Order CRUD, and /reports/summary 
 structure validation. Use fixtures for admin_token, client_token, 
 driver_token, payment and payment validation. Do not import from test files — all setup in conftest.py."
-**Результат:** 
+**Результат:** Рабочие и проходящие проверку тесты.
 ### Итого
 - Количество промптов: 6
 - Что пришлось исправлять вручную: .env файл, баг с панелью водителя.
