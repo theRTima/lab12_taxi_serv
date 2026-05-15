@@ -14,6 +14,21 @@
     <div id="error" class="error" role="alert"></div>
     <div id="success" class="success" role="status"></div>
     <div class="detail-grid" id="details"></div>
+    <section id="payment-section" class="section hidden">
+      <h2>Payment</h2>
+      <div id="payment-paid" class="payment-paid hidden"></div>
+      <p id="payment-wait" class="payment-hint hidden">Payment is available when the ride has started or been completed.</p>
+      <form id="payment-form" class="hidden">
+        <p class="payment-hint">Simulated payment — no real charges. Cards ending in <strong>0000</strong> are declined in demo.</p>
+        <label for="pay-amount">Amount</label>
+        <input type="number" id="pay-amount" required min="0.01" step="0.01">
+        <label for="pay-card">Card number</label>
+        <input type="text" id="pay-card" required maxlength="19" placeholder="4242 4242 4242 4242">
+        <label for="pay-holder">Cardholder name</label>
+        <input type="text" id="pay-holder" required maxlength="100">
+        <button type="submit" id="pay-btn">Pay now (simulated)</button>
+      </form>
+    </section>
     <div id="client-actions" class="section hidden">
       <h2>Client actions</h2>
       <div class="btn-row">
@@ -90,6 +105,51 @@
         document.getElementById('admin-status').value = currentOrder.status;
         if (currentOrder.driver_id) document.getElementById('admin-driver').value = currentOrder.driver_id;
       }
+      if (currentUser.role === 'client' && currentOrder.client_id === currentUser.id) {
+        await loadPaymentSection();
+      }
+    }
+
+    async function loadPaymentSection() {
+      const section = document.getElementById('payment-section');
+      const paidEl = document.getElementById('payment-paid');
+      const waitEl = document.getElementById('payment-wait');
+      const formEl = document.getElementById('payment-form');
+      section.classList.remove('hidden');
+
+      let payment = null;
+      try {
+        payment = await api('/payments/order/' + orderId, { headers: authHeaders() });
+      } catch (err) {
+        if (err.status !== 404) throw err;
+      }
+
+      if (payment && payment.status === 'paid') {
+        paidEl.classList.remove('hidden');
+        paidEl.innerHTML =
+          '<p><strong>Paid:</strong> ' + payment.amount.toFixed(2) + '</p>' +
+          '<p><strong>Date:</strong> ' + formatDate(payment.paid_at) + '</p>';
+        waitEl.classList.add('hidden');
+        formEl.classList.add('hidden');
+        return;
+      }
+
+      const canPay = currentOrder.status === 'in_progress' || currentOrder.status === 'completed';
+      const draftRaw = sessionStorage.getItem('payment_draft_' + orderId);
+      const draft = draftRaw ? JSON.parse(draftRaw) : null;
+
+      if (canPay) {
+        formEl.classList.remove('hidden');
+        waitEl.classList.add('hidden');
+        if (draft) {
+          document.getElementById('pay-amount').value = draft.amount;
+          document.getElementById('pay-card').value = draft.card_number;
+          document.getElementById('pay-holder').value = draft.card_holder;
+        }
+      } else {
+        waitEl.classList.remove('hidden');
+        formEl.classList.add('hidden');
+      }
     }
 
     function userCanCancel() {
@@ -125,6 +185,31 @@
         await loadOrder();
       } catch (err) {
         showError(errorEl, err.message);
+      }
+    });
+
+    document.getElementById('payment-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      hideError(errorEl);
+      document.getElementById('pay-btn').disabled = true;
+      try {
+        await api('/payments/simulate', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            order_id: parseInt(orderId, 10),
+            amount: parseFloat(document.getElementById('pay-amount').value),
+            card_number: document.getElementById('pay-card').value,
+            card_holder: document.getElementById('pay-holder').value,
+          }),
+        });
+        sessionStorage.removeItem('payment_draft_' + orderId);
+        showSuccess(successEl, 'Payment successful (simulated)');
+        await loadOrder();
+      } catch (err) {
+        showError(errorEl, err.message);
+      } finally {
+        document.getElementById('pay-btn').disabled = false;
       }
     });
 

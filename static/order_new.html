@@ -9,16 +9,29 @@
 <body class="page-wide">
   <div class="card medium">
     <h1>Book a ride</h1>
-    <p class="subtitle">Choose tariff and route</p>
+    <p class="subtitle">Choose tariff, route, and payment details</p>
     <nav class="nav" id="nav"></nav>
     <div id="error" class="error" role="alert"></div>
     <form id="book-form">
+      <p class="form-section-title">Trip</p>
       <label for="tariff">Tariff</label>
       <select id="tariff" name="tariff_id" required></select>
       <label for="pickup">Pickup</label>
       <input type="text" id="pickup" required maxlength="500" placeholder="Street, building">
       <label for="destination">Destination</label>
       <input type="text" id="destination" required maxlength="500" placeholder="Street, building">
+      <label for="distance">Estimated distance (km)</label>
+      <input type="number" id="distance" required min="0.1" step="0.1" value="5">
+
+      <p class="form-section-title">Payment (simulated)</p>
+      <p class="payment-hint">Card details are saved for this order. You can pay only after the ride has <strong>started</strong> or is <strong>completed</strong>.</p>
+      <label for="amount">Estimated amount</label>
+      <input type="number" id="amount" required min="0.01" step="0.01" readonly>
+      <label for="card_number">Card number</label>
+      <input type="text" id="card_number" required maxlength="19" placeholder="4242 4242 4242 4242" autocomplete="cc-number">
+      <label for="card_holder">Cardholder name</label>
+      <input type="text" id="card_holder" required maxlength="100" placeholder="John Doe" autocomplete="cc-name">
+
       <button type="submit" id="submit-btn">Book ride</button>
     </form>
     <p class="footer"><a href="/orders">Back to orders</a></p>
@@ -28,6 +41,18 @@
     const form = document.getElementById('book-form');
     const errorEl = document.getElementById('error');
     const tariffSelect = document.getElementById('tariff');
+    const distanceInput = document.getElementById('distance');
+    const amountInput = document.getElementById('amount');
+    let tariffs = [];
+
+    function updateEstimatedAmount() {
+      const tariff = tariffs.find(function (t) {
+        return t.id === parseInt(tariffSelect.value, 10);
+      });
+      if (!tariff) return;
+      const km = parseFloat(distanceInput.value) || 0;
+      amountInput.value = (tariff.price_per_km * km).toFixed(2);
+    }
 
     initPage({
       onReady: async function (user) {
@@ -36,10 +61,13 @@
           form.classList.add('hidden');
           return;
         }
-        const tariffs = await loadTariffs();
+        tariffs = await loadTariffs();
         tariffSelect.innerHTML = tariffs.map(function (t) {
           return '<option value="' + t.id + '">' + t.name + ' — ' + t.price_per_km + ' / km</option>';
         }).join('');
+        tariffSelect.addEventListener('change', updateEstimatedAmount);
+        distanceInput.addEventListener('input', updateEstimatedAmount);
+        updateEstimatedAmount();
       },
     });
 
@@ -57,6 +85,11 @@
             destination: document.getElementById('destination').value,
           }),
         });
+        sessionStorage.setItem('payment_draft_' + order.id, JSON.stringify({
+          amount: parseFloat(amountInput.value),
+          card_number: document.getElementById('card_number').value,
+          card_holder: document.getElementById('card_holder').value,
+        }));
         window.location.href = '/orders/detail?id=' + order.id;
       } catch (err) {
         showError(errorEl, err.message);

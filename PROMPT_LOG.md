@@ -25,8 +25,12 @@ DASHBOARD — follow project html style, show all 4 report metrics as plain HTML
 **Промпт:** "Lets finilize app by adding a UI for next elements:
 orders (booking,listing orders,details,canceling,driver status), driver(for admin - create and change drivers, for drivers - see assigned orders, toggle availability), tariffs(Admin: manage tariff list/prices; client: pick tariff when ordering. Create 3 tarrifs - simple, medium and lux), profile page (change password, edit name). Follow style of app htmls."
 **Результат:** Создал недостающий интерфейс для заказов, водителей, страницы профиля. При тестировании найден баг в приложении, даже если юзер водитель, при переходе на страницу водителя, спустя секунду выкидывает в форму логина. Осталось добавить интерфейс для оплаты заказа. Весь остальной функционал работает как предполагалось. Решение бага описано в CODE_REVIEW.md как часть второго задания. Админ назначает водителй по их id, у каждого водителя есть свой айди + обычный айди пользователя. Таким образом один аккаунт может использоваться как и для заказов, так и для работы.
+### Промпт 5
+**Инструмент:** Auto режим в Cursor.
+**Промпт:** "Add a payment UI for Client users. User should enter payment information when making an order, he should be able to pay only started or done orders. It should be a simulated payment for demonstration. "
+**Результат:** Реализован интерфейс для оплаты. Клиент может сделать это либо при публикации заказа на поездку, либо при изменении статуса на Завершено.
 ### Итого
-- Количество промптов: 4
+- Количество промптов: 6
 - Что пришлось исправлять вручную: .env файл, баг с панелью водителя.
 - Время: ~ 2 часа
 ---

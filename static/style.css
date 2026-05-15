@@ -334,6 +334,28 @@ a.btn:hover {
   margin: 0;
 }
 
+.payment-hint {
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  background: #fffbeb;
+  color: #92400e;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.payment-paid {
+  padding: 0.75rem;
+  background: #ecfdf5;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.form-section-title {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .card.medium {
   max-width: 640px;
 }
