@@ -30,8 +30,13 @@ orders (booking,listing orders,details,canceling,driver status), driver(for admi
 **Промпт:** "Add a payment UI for Client users. User should enter payment information when making an order, he should be able to pay only started or done orders. It should be a simulated payment for demonstration. "
 **Результат:** Реализован интерфейс для оплаты. Клиент может сделать это либо при публикации заказа на поездку, либо при изменении статуса на Завершено.
 ### Промпт 5
-**Инструмент:** Auto режим в Cursor.
-**Промпт:** ""
+**Инструмент:** Copilot в agentic режиме.
+**Промпт:** "Generate pytest tests for the existing FastAPI taxi app using TestClient 
+and an in-memory SQLite test database. Use the conftest.py fixture pattern 
+with get_db override. Cover: auth (register, login, bad credentials), 
+role guards (admin/client/driver access), Order CRUD, and /reports/summary 
+structure validation. Use fixtures for admin_token, client_token, 
+driver_token, payment and payment validation. Do not import from test files — all setup in conftest.py."
 **Результат:** 
 ### Итого
 - Количество промптов: 6
