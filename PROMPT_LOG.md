@@ -50,6 +50,6 @@ driver_token, payment and payment validation. Do not import from test files — 
 **Результат:** workflow файл. Рабочая проверка PR.
 ### Итого
 - Количество промптов: 1
-- Что пришлось исправлять вручную: Создал секрет на github, создавал API в aistudio google. Создал новую ветку для проверки работы Actions. 2 раза.
+- Что пришлось исправлять вручную: Создал секрет на github, создавал API в aistudio google. Создал новую ветку для проверки работы Actions. 3 раза.
 - Время: ~ 10 минут
 ---
