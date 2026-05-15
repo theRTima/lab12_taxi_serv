@@ -20,7 +20,9 @@ jobs:
 
       - name: Get PR diff
         run: |
+          git fetch origin ${{ github.base_ref }}
           git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
+          echo "Diff size: $(wc -c < pr_diff.txt) bytes"
 
       - name: AI Review via Gemini
         id: ai_review
@@ -33,7 +35,7 @@ jobs:
           echo "Diff length: $(echo $DIFF | wc -c) chars"
 
           RESPONSE=$(curl -s \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
             -H "content-type: application/json" \
             -d "{
               \"contents\": [{
