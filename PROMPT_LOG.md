@@ -46,10 +46,10 @@ driver_token, payment and payment validation. Do not import from test files — 
 ## Задание Повышенной сложности 4: Интеграция ИИ в CI/CD
 ### Промпт 1
 **Инструмент:** Copilot в agentic режиме.
-**Промпт:** "I need to setup a github workflow file for AI check of every PR. It should publih its review as a PR comment. Use Google gemini API as a free alternative"
+**Промпт:** "I need to setup a github workflow file for AI check of every PR. It should publih its review as a PR comment."
 **Результат:** workflow файл. Рабочая проверка PR.
 ### Итого
 - Количество промптов: 1
-- Что пришлось исправлять вручную: Создал секрет на github, создавал API в aistudio google. Создал новую ветку для проверки работы Actions. 3 раза.
-- Время: ~ 10 минут
+- Что пришлось исправлять вручную: Создал секрет на github, создавал API в aistudio google, groq. Создал новую ветку для проверки работы Actions. 3 раза. Остановился на groq из-за наличия действительно бесплатной версии.
+- Время: ~ 50 минут
 ---

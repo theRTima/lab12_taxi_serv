@@ -20,32 +20,35 @@ jobs:
 
       - name: Get PR diff
         run: |
-          git fetch origin ${{ github.base_ref }}
-          git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
+          git fetch origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
+          git diff refs/remotes/origin/${{ github.base_ref }}...HEAD > pr_diff.txt
           echo "Diff size: $(wc -c < pr_diff.txt) bytes"
 
-      - name: AI Review via Gemini
+      - name: AI Review via Groq
         id: ai_review
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           DIFF=$(cat pr_diff.txt | head -c 12000)
-
-          # Debug: check diff is not empty
           echo "Diff length: $(echo $DIFF | wc -c) chars"
 
-          RESPONSE=$(curl -s \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+          # Escape diff for JSON
+          DIFF_ESCAPED=$(echo "$DIFF" | python3 -c "
+          import sys, json
+          print(json.dumps(sys.stdin.read()))
+          ")
+
+          RESPONSE=$(curl -s https://api.groq.com/openai/v1/chat/completions \
+            -H "Authorization: Bearer $GROQ_API_KEY" \
             -H "content-type: application/json" \
             -d "{
-              \"contents\": [{
-                \"parts\": [{
-                  \"text\": \"You are a code reviewer. Analyze this PR diff:\n1. Summary of changes\n2. Potential issues\n3. Suggestions\n\nDiff:\n$DIFF\"
-                }]
+              \"model\": \"llama3-8b-8192\",
+              \"messages\": [{
+                \"role\": \"user\",
+                \"content\": $DIFF_ESCAPED
               }]
             }")
 
-          # Debug: print raw response before parsing
           echo "API Response: $RESPONSE"
 
           echo $RESPONSE | python3 -c "
@@ -54,7 +57,7 @@ jobs:
           if 'error' in data:
               print('API ERROR:', data['error'])
               sys.exit(1)
-          print(data['candidates'][0]['content']['parts'][0]['text'])
+          print(data['choices'][0]['message']['content'])
           " > ai_comment.txt
 
       - name: Post comment to PR
