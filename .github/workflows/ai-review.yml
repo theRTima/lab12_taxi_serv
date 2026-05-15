@@ -24,7 +24,7 @@ jobs:
           git diff refs/remotes/origin/${{ github.base_ref }}...HEAD > pr_diff.txt
           echo "Diff size: $(wc -c < pr_diff.txt) bytes"
 
-     - name: Build prompt
+      - name: Build prompt
         run: |
           python3 - <<'EOF'
           import json
