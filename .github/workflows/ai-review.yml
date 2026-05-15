@@ -42,7 +42,7 @@ jobs:
             -H "Authorization: Bearer $GROQ_API_KEY" \
             -H "content-type: application/json" \
             -d "{
-              \"model\": \"llama3-8b-8192\",
+              \"model\": \"llama-3.3-70b-versatile\",
               \"messages\": [{
                 \"role\": \"user\",
                 \"content\": $DIFF_ESCAPED
