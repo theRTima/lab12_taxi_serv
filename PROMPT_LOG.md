@@ -7,7 +7,7 @@
 ### Промпт 2
 **Инструмент:** Auto режим в Cursor.
 **Промпт:** "Now add JWT authentification. file auth.py for hashing password with bcrypt, creating access token, getting current user and role checker for role based things, plus a auth router with POSTs for register and Login. Create a simple UI with plain html pages - for login, register. "
-**Результат:** Реализована аутентификация позьзователя, базовая проверка пароля на длину. Веб интерфейс для входа и регистрации пользователя по email. Шифрование пароля. Документация swagger так же обновилась. Также дополнился файл примера .env (.env.example). 
+**Результат:** Реализована аутентификация позьзователя, базовая проверка пароля на длину, почты на правильность ввода. Веб интерфейс для входа и регистрации пользователя по email. Шифрование пароля. Документация swagger так же обновилась. Также дополнился файл примера .env (.env.example). 
 ### Итого
 - Количество промптов: 
 - Что пришлось исправлять вручную:
