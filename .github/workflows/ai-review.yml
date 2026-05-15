@@ -1,0 +1,34 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  - name: AI Review via Gemini
+        id: ai_review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          DIFF=$(cat pr_diff.txt | head -c 12000)
+          
+          RESPONSE=$(curl -s \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+            -H "content-type: application/json" \
+            -d "{
+              \"contents\": [{
+                \"parts\": [{
+                  \"text\": \"You are a code reviewer. Analyze this PR diff:\n1. Summary of changes\n2. Potential issues\n3. Suggestions\n\nDiff:\n$DIFF\"
+                }]
+              }]
+            }")
+          
+          echo $RESPONSE | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          print(data['candidates'][0]['content']['parts'][0]['text'])
+          " > ai_comment.txt
