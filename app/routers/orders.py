@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models.driver import Driver
 from app.models.order import Order, OrderStatus
 from app.models.user import User, UserRole
+from app.models.tariff import Tariff
 from app.schemas.order import OrderCreate, OrderRead, OrderStatusUpdate, OrderUpdate
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -75,6 +76,10 @@ def create_order(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(require_roles(UserRole.CLIENT))],
 ) -> Order:
+    tariff = db.get(Tariff, payload.tariff_id)
+    if tariff is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tariff not found")
+
     order = Order(
         client_id=current_user.id,
         tariff_id=payload.tariff_id,
