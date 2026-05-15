@@ -29,6 +29,10 @@ orders (booking,listing orders,details,canceling,driver status), driver(for admi
 **Инструмент:** Auto режим в Cursor.
 **Промпт:** "Add a payment UI for Client users. User should enter payment information when making an order, he should be able to pay only started or done orders. It should be a simulated payment for demonstration. "
 **Результат:** Реализован интерфейс для оплаты. Клиент может сделать это либо при публикации заказа на поездку, либо при изменении статуса на Завершено.
+### Промпт 5
+**Инструмент:** Auto режим в Cursor.
+**Промпт:** ""
+**Результат:** 
 ### Итого
 - Количество промптов: 6
 - Что пришлось исправлять вручную: .env файл, баг с панелью водителя.
