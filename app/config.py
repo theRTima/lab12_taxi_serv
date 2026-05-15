@@ -1,3 +1,6 @@
+import logging
+import secrets
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,3 +17,11 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Generate ephemeral secret if using the insecure default
+if settings.jwt_secret_key == "change-me-in-production-use-a-long-random-string":
+    logging.warning(
+        "Default insecure JWT secret detected; generating an ephemeral secret. "
+        "Set JWT_SECRET_KEY environment variable for production."
+    )
+    settings.jwt_secret_key = secrets.token_urlsafe(32)

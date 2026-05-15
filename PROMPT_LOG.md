@@ -43,3 +43,13 @@ driver_token, payment and payment validation. Do not import from test files — 
 - Что пришлось исправлять вручную: .env файл, баг с панелью водителя.
 - Время: ~ 2 часа
 ---
+## Задание Повышенной сложности 4: Интеграция ИИ в CI/CD
+### Промпт 1
+**Инструмент:** Copilot в agentic режиме.
+**Промпт:** "I need to setup a github workflow file for AI check of every PR. It should publih its review as a PR comment. Use Google gemini API as a free alternative"
+**Результат:** workflow файл. Рабочая проверка PR.
+### Итого
+- Количество промптов: 1
+- Что пришлось исправлять вручную: Создал секрет на github, создавал API в aistudio google. Создал новую ветку для проверки работы Actions
+- Время: ~ 10 минут
+---

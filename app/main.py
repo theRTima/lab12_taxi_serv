@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -20,14 +20,21 @@ from app.seed import seed_tariffs
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
+def safe_file_response(filename: str) -> FileResponse:
+    path = STATIC_DIR / filename
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Page not found")
+    return FileResponse(path)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     db = SessionLocal()
     try:
         seed_tariffs(db)
+        yield
     finally:
         db.close()
-    yield
 
 
 app = FastAPI(title=settings.app_name, debug=settings.debug, lifespan=lifespan)
@@ -35,57 +42,57 @@ app = FastAPI(title=settings.app_name, debug=settings.debug, lifespan=lifespan)
 # HTML pages (registered before API routers where paths overlap)
 @app.get("/admin/users", include_in_schema=False)
 def admin_users_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "admin_users.html")
+    return safe_file_response("admin_users.html")
 
 
 @app.get("/orders", include_in_schema=False)
 def orders_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "orders.html")
+    return safe_file_response("orders.html")
 
 
 @app.get("/orders/new", include_in_schema=False)
 def order_new_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "order_new.html")
+    return safe_file_response("order_new.html")
 
 
 @app.get("/orders/detail", include_in_schema=False)
 def order_detail_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "order_detail.html")
+    return safe_file_response("order_detail.html")
 
 
 @app.get("/drivers", include_in_schema=False)
 def drivers_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "drivers.html")
+    return safe_file_response("drivers.html")
 
 
 @app.get("/tariffs", include_in_schema=False)
 def tariffs_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "tariffs.html")
+    return safe_file_response("tariffs.html")
 
 
 @app.get("/profile", include_in_schema=False)
 def profile_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "profile.html")
+    return safe_file_response("profile.html")
 
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+    return safe_file_response("index.html")
 
 
 @app.get("/login")
 def login_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "login.html")
+    return safe_file_response("login.html")
 
 
 @app.get("/register")
 def register_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "register.html")
+    return safe_file_response("register.html")
 
 
 @app.get("/dashboard")
 def dashboard_page() -> FileResponse:
-    return FileResponse(STATIC_DIR / "dashboard.html")
+    return safe_file_response("dashboard.html")
 
 
 app.include_router(health_router)
