@@ -1,2 +1,2 @@
 # lab19_taxi_serv
-lab number 19, taxi order service with order and etc.
+Лабораторная работа номер 12, вариант 19 - Сервис заказа такси.
