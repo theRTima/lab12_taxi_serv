@@ -24,23 +24,28 @@ jobs:
           git diff refs/remotes/origin/${{ github.base_ref }}...HEAD > pr_diff.txt
           echo "Diff size: $(wc -c < pr_diff.txt) bytes"
 
+     - name: Build prompt
+        run: |
+          python3 - <<'EOF'
+          import json
+          diff = open('pr_diff.txt').read(12000)
+          prompt = (
+              "You are a code reviewer. Analyze this PR diff and provide:\n"
+              "1. Summary of changes (2-3 sentences)\n"
+              "2. Potential issues or bugs\n"
+              "3. Suggestions for improvement\n"
+              "\nDiff:\n" + diff
+          )
+          with open('prompt.json', 'w') as f:
+              json.dump({"prompt": prompt}, f)
+          EOF
+
       - name: AI Review via Groq
         id: ai_review
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
-          PROMPT=$(python3 -c "
-          import sys, json
-          diff = open('pr_diff.txt').read(12000)
-          prompt = f'''You are a code reviewer. Analyze this PR diff and provide:
-1. Summary of changes (2-3 sentences)
-2. Potential issues or bugs
-3. Suggestions for improvement
-
-Diff:
-{diff}'''
-          print(json.dumps(prompt))
-          ")
+          PROMPT=$(python3 -c "import json; print(json.load(open('prompt.json'))['prompt'])" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))")
 
           echo "Diff length: $(wc -c < pr_diff.txt) chars"
 
