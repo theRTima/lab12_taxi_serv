@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taxi Service</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="card">
+    <h1>Taxi Service</h1>
+    <p class="subtitle" id="greeting">Loading…</p>
+
+    <div id="user-info" class="user-info" hidden></div>
+
+    <button type="button" class="logout" id="logout-btn" hidden>Sign out</button>
+
+    <p class="footer" id="auth-links">
+      <a href="/login">Sign in</a> · <a href="/register">Register</a>
+    </p>
+  </div>
+
+  <script>
+    const greeting = document.getElementById('greeting');
+    const userInfo = document.getElementById('user-info');
+    const logoutBtn = document.getElementById('logout-btn');
+    const authLinks = document.getElementById('auth-links');
+    const token = localStorage.getItem('access_token');
+
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('access_token');
+      window.location.reload();
+    });
+
+    if (!token) {
+      greeting.textContent = 'Welcome';
+    } else {
+      fetch('/auth/me', {
+        headers: { Authorization: 'Bearer ' + token },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then((user) => {
+          greeting.textContent = 'Hello, ' + user.name;
+          userInfo.hidden = false;
+          userInfo.innerHTML =
+            '<p><strong>Email:</strong> ' + user.email + '</p>' +
+            '<p><strong>Role:</strong> ' + user.role + '</p>';
+          logoutBtn.hidden = false;
+          authLinks.hidden = true;
+        })
+        .catch(() => {
+          localStorage.removeItem('access_token');
+          greeting.textContent = 'Session expired';
+        });
+    }
+  </script>
+</body>
+</html>
