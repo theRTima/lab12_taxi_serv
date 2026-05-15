@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Taxi Service</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="page-wide">
+  <div class="card wide">
+    <h1>Dashboard</h1>
+    <p class="subtitle">Reports summary</p>
+
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/docs" target="_blank">API docs</a>
+      <a href="/admin/users">Admin users</a>
+    </nav>
+
+    <div id="error" class="error" role="alert"></div>
+
+    <section class="section">
+      <h2>Total orders</h2>
+      <p class="metric-value" id="total-orders">—</p>
+    </section>
+
+    <section class="section">
+      <h2>Revenue by tariff</h2>
+      <table class="data">
+        <thead>
+          <tr><th>Tariff</th><th>Revenue</th></tr>
+        </thead>
+        <tbody id="revenue-table"></tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Top drivers</h2>
+      <table class="data">
+        <thead>
+          <tr><th>Driver</th><th>Orders</th></tr>
+        </thead>
+        <tbody id="drivers-table"></tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Orders per day (last 7 days)</h2>
+      <table class="data">
+        <thead>
+          <tr><th>Date</th><th>Orders</th></tr>
+        </thead>
+        <tbody id="days-table"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('access_token');
+    const errorEl = document.getElementById('error');
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.add('visible');
+    }
+
+    function fillTable(tbodyId, rows, cols) {
+      const tbody = document.getElementById(tbodyId);
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="' + cols + '">No data</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(function (r) { return '<tr>' + r + '</tr>'; }).join('');
+    }
+
+    if (!token) {
+      showError('Please sign in to view the dashboard.');
+      setTimeout(function () { window.location.href = '/login'; }, 1500);
+    } else {
+      fetch('/reports/summary', {
+        headers: { Authorization: 'Bearer ' + token },
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Failed to load report');
+          return res.json();
+        })
+        .then(function (data) {
+          document.getElementById('total-orders').textContent = data.total_orders;
+
+          fillTable('revenue-table',
+            data.revenue_by_tariff.map(function (r) {
+              return '<td>' + r.tariff_name + '</td><td>' + r.revenue.toFixed(2) + '</td>';
+            }), 2);
+
+          fillTable('drivers-table',
+            data.top_drivers.map(function (d) {
+              return '<td>' + d.driver_name + '</td><td>' + d.order_count + '</td>';
+            }), 2);
+
+          fillTable('days-table',
+            data.orders_per_day.map(function (d) {
+              return '<td>' + d.date + '</td><td>' + d.count + '</td>';
+            }), 2);
+        })
+        .catch(function () {
+          showError('Could not load report. Sign in again.');
+          localStorage.removeItem('access_token');
+        });
+    }
+  </script>
+</body>
+</html>

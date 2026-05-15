@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Users</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="page-wide">
+  <div class="card wide">
+    <h1>Users</h1>
+    <p class="subtitle">Admin panel</p>
+
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/docs" target="_blank">API docs</a>
+    </nav>
+
+    <div id="error" class="error" role="alert"></div>
+
+    <table class="data">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Change role</th>
+        </tr>
+      </thead>
+      <tbody id="users-table"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('access_token');
+    const errorEl = document.getElementById('error');
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.add('visible');
+    }
+
+    function authHeaders() {
+      return {
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      };
+    }
+
+    function loadUsers() {
+      fetch('/admin/users/list', { headers: authHeaders() })
+        .then(function (res) {
+          if (res.status === 403) throw new Error('Admin access required');
+          if (!res.ok) throw new Error('Failed to load users');
+          return res.json();
+        })
+        .then(function (users) {
+          const tbody = document.getElementById('users-table');
+          tbody.innerHTML = users.map(function (u) {
+            return '<tr>' +
+              '<td>' + u.id + '</td>' +
+              '<td>' + u.name + '</td>' +
+              '<td>' + u.email + '</td>' +
+              '<td id="role-' + u.id + '">' + u.role + '</td>' +
+              '<td>' +
+                '<form class="role-form" data-user-id="' + u.id + '">' +
+                  '<select name="role">' +
+                    '<option value="client"' + (u.role === 'client' ? ' selected' : '') + '>client</option>' +
+                    '<option value="driver"' + (u.role === 'driver' ? ' selected' : '') + '>driver</option>' +
+                    '<option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>admin</option>' +
+                  '</select>' +
+                  '<button type="submit" class="btn-inline">Save</button>' +
+                '</form>' +
+              '</td>' +
+            '</tr>';
+          }).join('');
+
+          tbody.querySelectorAll('.role-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+              e.preventDefault();
+              const userId = form.dataset.userId;
+              const role = form.querySelector('select').value;
+              fetch('/admin/users/' + userId + '/role', {
+                method: 'PATCH',
+                headers: authHeaders(),
+                body: JSON.stringify({ role: role }),
+              })
+                .then(function (res) {
+                  if (!res.ok) return res.json().then(function (d) { throw new Error(d.detail || 'Update failed'); });
+                  return res.json();
+                })
+                .then(function (updated) {
+                  document.getElementById('role-' + userId).textContent = updated.role;
+                  errorEl.classList.remove('visible');
+                })
+                .catch(function (err) {
+                  showError(err.message);
+                });
+            });
+          });
+        })
+        .catch(function (err) {
+          showError(err.message);
+          if (!token) setTimeout(function () { window.location.href = '/login'; }, 1500);
+        });
+    }
+
+    if (!token) {
+      showError('Please sign in.');
+      setTimeout(function () { window.location.href = '/login'; }, 1500);
+    } else {
+      loadUsers();
+    }
+  </script>
+</body>
+</html>

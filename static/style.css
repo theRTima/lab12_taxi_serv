@@ -128,3 +128,87 @@ button:disabled {
 .logout:hover {
   background: #475569;
 }
+
+body.page-wide {
+  align-items: flex-start;
+}
+
+.card.wide {
+  max-width: 960px;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+}
+
+.nav a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.nav a:hover {
+  text-decoration: underline;
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+table.data th,
+table.data td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+table.data th {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+table.data tr:last-child td {
+  border-bottom: none;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2563eb;
+  margin: 0;
+}
+
+.btn-inline {
+  width: auto;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.role-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.role-form select {
+  width: auto;
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+}

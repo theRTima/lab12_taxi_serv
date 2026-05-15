@@ -7,7 +7,19 @@
 ### Промпт 2
 **Инструмент:** Auto режим в Cursor.
 **Промпт:** "Now add JWT authentification. file auth.py for hashing password with bcrypt, creating access token, getting current user and role checker for role based things, plus a auth router with POSTs for register and Login. Create a simple UI with plain html pages - for login, register. "
-**Результат:** Реализована аутентификация позьзователя, базовая проверка пароля на длину, почты на правильность ввода. Веб интерфейс для входа и регистрации пользователя по email. Шифрование пароля. Документация swagger так же обновилась. Также дополнился файл примера .env (.env.example). 
+**Результат:** Реализована аутентификация позьзователя, базовая проверка пароля на длину, почты на правильность ввода. Веб интерфейс для входа и регистрации пользователя по email. Шифрование пароля. Документация swagger так же обновилась. Также дополнился файл примера .env (.env.example). Для примера работы приложения, при регистрации можно сразу зарегистрироваться и как админ и как водитель.
+### Промпт 3
+**Инструмент:** Auto режим в Cursor.
+**Промпт:** "Now add CRUD ROUTERS — create separate files routers/orders.py, routers/drivers.py,routers/tariffs.py, routers/payments.py.
+Access rules:
+orders: create = client only; update status = driver or admin
+drivers: create/update/delete = admin only; read = anyone authenticated  
+tariffs: write = admin only; read = public
+payments: create = client; read = owner or admin
+ADMIN ROUTER — routers/admin.py, all routes require require_role("admin"), it should list all users with roles plus a body: {role: "admin"|"client"|"driver"}
+REPORTS — routers/reports.py, require authenticated user - GET /reports/summary returns JSON of total orders, revenue by tariff, top drivers and orders per day of last 7 days
+DASHBOARD — follow project html style, show all 4 report metrics as plain HTML tables, add nav links to /docs, /admin/users."
+**Результат:** Дополнен интерфейс, добавлен функицонал отчета. Создан дашборд, ссылка на swagger докумнтацию. Админ может менять роли пользователей, просматривать список всех пользователей - это может только он. Для заказов пока только backend. Осталось создать UI.
 ### Итого
 - Количество промптов: 
 - Что пришлось исправлять вручную:

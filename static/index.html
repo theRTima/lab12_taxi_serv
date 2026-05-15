@@ -15,6 +15,12 @@
 
     <button type="button" class="logout" id="logout-btn" hidden>Sign out</button>
 
+    <nav class="nav" id="main-nav" hidden>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/docs" target="_blank">API docs</a>
+      <a href="/admin/users" id="admin-link" hidden>Admin users</a>
+    </nav>
+
     <p class="footer" id="auth-links">
       <a href="/login">Sign in</a> · <a href="/register">Register</a>
     </p>
@@ -25,6 +31,8 @@
     const userInfo = document.getElementById('user-info');
     const logoutBtn = document.getElementById('logout-btn');
     const authLinks = document.getElementById('auth-links');
+    const mainNav = document.getElementById('main-nav');
+    const adminLink = document.getElementById('admin-link');
     const token = localStorage.getItem('access_token');
 
     logoutBtn.addEventListener('click', () => {
@@ -50,6 +58,8 @@
             '<p><strong>Role:</strong> ' + user.role + '</p>';
           logoutBtn.hidden = false;
           authLinks.hidden = true;
+          mainNav.hidden = false;
+          if (user.role === 'admin') adminLink.hidden = false;
         })
         .catch(() => {
           localStorage.removeItem('access_token');
