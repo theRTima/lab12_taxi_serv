@@ -50,19 +50,19 @@ seed_tariffs(_db)
 admin_user = User(
     name="Admin",
     email="admin@example.com",
-    hashed_password=get_password_hash("adminpass"),
+    hashed_password=get_password_hash("admin_pass"),
     role=UserRole.ADMIN,
 )
 client_user = User(
     name="Client",
     email="client@example.com",
-    hashed_password=get_password_hash("clientpass"),
+    hashed_password=get_password_hash("client_pass"),
     role=UserRole.CLIENT,
 )
 driver_user = User(
     name="Driver",
     email="driver@example.com",
-    hashed_password=get_password_hash("driverpass"),
+    hashed_password=get_password_hash("driver_pass"),
     role=UserRole.DRIVER,
 )
 _db.add_all([admin_user, client_user, driver_user])
@@ -100,3 +100,63 @@ def client_token():
 @pytest.fixture
 def driver_token():
     return _driver_token
+
+@pytest.fixture
+def auth_headers_admin():
+    return {"Authorization": f"Bearer {_admin_token}"}
+
+@pytest.fixture
+def auth_headers_client():
+    return {"Authorization": f"Bearer {_client_token}"}
+
+@pytest.fixture
+def auth_headers_driver():
+    return {"Authorization": f"Bearer {_driver_token}"}
+
+@pytest.fixture
+def db():
+    """Provide test database session for each test"""
+    db = TestingSessionLocal()
+    yield db
+    db.rollback()
+    db.close()
+
+@pytest.fixture
+def tariff(db):
+    """Provide a test tariff"""
+    from app.models.tariff import Tariff
+    tariff = Tariff(name="Test", price_per_km=10.0)
+    db.add(tariff)
+    db.commit()
+    db.refresh(tariff)
+    return tariff
+
+@pytest.fixture
+def order(db, tariff):
+    """Provide a test order for client"""
+    from app.models.order import Order, OrderStatus
+    order = Order(
+        client_id=client_user.id,
+        tariff_id=tariff.id,
+        pickup="Test Pickup",
+        destination="Test Destination",
+        status=OrderStatus.PENDING,
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    return order
+
+@pytest.fixture
+def payment(db, order):
+    """Provide a test payment"""
+    from app.models.payment import Payment, PaymentStatus
+    payment = Payment(
+        order_id=order.id,
+        amount=100.0,
+        status=PaymentStatus.PENDING,
+    )
+    db.add(payment)
+    db.commit()
+    db.refresh(payment)
+    return payment
