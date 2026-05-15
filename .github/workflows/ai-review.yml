@@ -28,6 +28,10 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           DIFF=$(cat pr_diff.txt | head -c 12000)
+
+          # Debug: check diff is not empty
+          echo "Diff length: $(echo $DIFF | wc -c) chars"
+
           RESPONSE=$(curl -s \
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
             -H "content-type: application/json" \
@@ -38,9 +42,16 @@ jobs:
                 }]
               }]
             }")
+
+          # Debug: print raw response before parsing
+          echo "API Response: $RESPONSE"
+
           echo $RESPONSE | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
+          if 'error' in data:
+              print('API ERROR:', data['error'])
+              sys.exit(1)
           print(data['candidates'][0]['content']['parts'][0]['text'])
           " > ai_comment.txt
 
