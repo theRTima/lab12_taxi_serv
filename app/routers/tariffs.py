@@ -19,7 +19,7 @@ def _get_tariff_or_404(db: Session, tariff_id: int) -> Tariff:
     return tariff
 
 
-@router.get("", response_model=list[TariffRead])
+@router.get("/list", response_model=list[TariffRead])
 def list_tariffs(db: Annotated[Session, Depends(get_db)]) -> list[Tariff]:
     return db.query(Tariff).all()
 

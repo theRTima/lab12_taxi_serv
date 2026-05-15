@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order — Taxi Service</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="page-wide">
+  <div class="card wide">
+    <h1>Order <span id="order-id"></span></h1>
+    <p class="subtitle">Order details</p>
+    <nav class="nav" id="nav"></nav>
+    <div id="error" class="error" role="alert"></div>
+    <div id="success" class="success" role="status"></div>
+    <div class="detail-grid" id="details"></div>
+    <div id="client-actions" class="section hidden">
+      <h2>Client actions</h2>
+      <div class="btn-row">
+        <button type="button" class="btn-danger" id="cancel-btn">Cancel order</button>
+      </div>
+    </div>
+    <div id="driver-actions" class="section hidden">
+      <h2>Driver actions</h2>
+      <label for="status">Update status</label>
+      <select id="status">
+        <option value="assigned">Accept (assigned)</option>
+        <option value="in_progress">in_progress</option>
+        <option value="completed">completed</option>
+      </select>
+      <button type="button" id="status-btn">Update status</button>
+    </div>
+    <div id="admin-actions" class="section hidden">
+      <h2>Admin actions</h2>
+      <label for="admin-status">Status</label>
+      <select id="admin-status">
+        <option value="pending">pending</option>
+        <option value="assigned">assigned</option>
+        <option value="in_progress">in_progress</option>
+        <option value="completed">completed</option>
+        <option value="cancelled">cancelled</option>
+      </select>
+      <label for="admin-driver">Driver ID (optional)</label>
+      <input type="number" id="admin-driver" min="1" placeholder="Driver profile ID">
+      <button type="button" id="admin-status-btn">Update status</button>
+    </div>
+    <p class="footer"><a href="/orders">Back to orders</a></p>
+  </div>
+  <script src="/static/app.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('id');
+    const errorEl = document.getElementById('error');
+    const successEl = document.getElementById('success');
+    let currentOrder = null;
+    let currentUser = null;
+
+    if (!orderId) {
+      showError(errorEl, 'Missing order id');
+    } else {
+      initPage({
+        onReady: async function (user) {
+          currentUser = user;
+          document.getElementById('order-id').textContent = '#' + orderId;
+          await loadOrder();
+        },
+      });
+    }
+
+    async function loadOrder() {
+      currentOrder = await api('/orders/' + orderId, { headers: authHeaders() });
+      const tariffs = await loadTariffs();
+      const tariff = tariffs.find(function (t) { return t.id === currentOrder.tariff_id; });
+      document.getElementById('details').innerHTML =
+        '<p><strong>Status:</strong> ' + statusBadge(currentOrder.status) + '</p>' +
+        '<p><strong>Pickup:</strong> ' + currentOrder.pickup + '</p>' +
+        '<p><strong>Destination:</strong> ' + currentOrder.destination + '</p>' +
+        '<p><strong>Tariff:</strong> ' + (tariff ? tariff.name + ' (' + tariff.price_per_km + '/km)' : currentOrder.tariff_id) + '</p>' +
+        '<p><strong>Driver ID:</strong> ' + (currentOrder.driver_id || '—') + '</p>' +
+        '<p><strong>Created:</strong> ' + formatDate(currentOrder.created_at) + '</p>';
+
+      if (userCanCancel()) {
+        document.getElementById('client-actions').classList.remove('hidden');
+      }
+      if (currentUser.role === 'driver' && ['pending', 'assigned', 'in_progress'].indexOf(currentOrder.status) >= 0) {
+        document.getElementById('driver-actions').classList.remove('hidden');
+      }
+      if (currentUser.role === 'admin') {
+        document.getElementById('admin-actions').classList.remove('hidden');
+        document.getElementById('admin-status').value = currentOrder.status;
+        if (currentOrder.driver_id) document.getElementById('admin-driver').value = currentOrder.driver_id;
+      }
+    }
+
+    function userCanCancel() {
+      return currentUser.role === 'client' &&
+        currentOrder.client_id === currentUser.id &&
+        ['pending', 'assigned'].indexOf(currentOrder.status) >= 0;
+    }
+
+    document.getElementById('cancel-btn').addEventListener('click', async function () {
+      if (!confirm('Cancel this order?')) return;
+      try {
+        await api('/orders/' + orderId + '/status', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ status: 'cancelled' }),
+        });
+        showSuccess(successEl, 'Order cancelled');
+        await loadOrder();
+        document.getElementById('client-actions').classList.add('hidden');
+      } catch (err) {
+        showError(errorEl, err.message);
+      }
+    });
+
+    document.getElementById('status-btn').addEventListener('click', async function () {
+      try {
+        await api('/orders/' + orderId + '/status', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ status: document.getElementById('status').value }),
+        });
+        showSuccess(successEl, 'Status updated');
+        await loadOrder();
+      } catch (err) {
+        showError(errorEl, err.message);
+      }
+    });
+
+    document.getElementById('admin-status-btn').addEventListener('click', async function () {
+      const body = { status: document.getElementById('admin-status').value };
+      const driverVal = document.getElementById('admin-driver').value;
+      if (driverVal) body.driver_id = parseInt(driverVal, 10);
+      try {
+        await api('/orders/' + orderId + '/status', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        });
+        showSuccess(successEl, 'Status updated');
+        await loadOrder();
+      } catch (err) {
+        showError(errorEl, err.message);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -12,6 +12,10 @@ class DriverUpdate(BaseModel):
     is_available: bool | None = None
 
 
+class DriverAvailabilityUpdate(BaseModel):
+    is_available: bool
+
+
 class DriverRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

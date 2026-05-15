@@ -27,3 +27,12 @@ class UserRead(BaseModel):
     name: str
     email: str
     role: UserRole
+
+
+class UserProfileUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+
+
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=6, max_length=128)

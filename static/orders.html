@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders — Taxi Service</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="page-wide">
+  <div class="card wide">
+    <h1>Orders</h1>
+    <p class="subtitle">Your taxi orders</p>
+    <nav class="nav" id="nav"></nav>
+    <div id="error" class="error" role="alert"></div>
+    <p id="client-actions" class="hidden"><a href="/orders/new" class="btn">Book new ride</a></p>
+    <table class="data">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Pickup</th>
+          <th>Destination</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="orders-table"></tbody>
+    </table>
+  </div>
+  <script src="/static/app.js"></script>
+  <script>
+    initPage({
+      onReady: async function (user) {
+        if (user.role === 'client') {
+          document.getElementById('client-actions').classList.remove('hidden');
+        }
+        const orders = await api('/orders/list', { headers: authHeaders() });
+        const tbody = document.getElementById('orders-table');
+        if (!orders.length) {
+          tbody.innerHTML = '<tr><td colspan="6">No orders yet</td></tr>';
+          return;
+        }
+        tbody.innerHTML = orders.map(function (o) {
+          return '<tr>' +
+            '<td>' + o.id + '</td>' +
+            '<td>' + o.pickup + '</td>' +
+            '<td>' + o.destination + '</td>' +
+            '<td>' + statusBadge(o.status) + '</td>' +
+            '<td>' + formatDate(o.created_at) + '</td>' +
+            '<td><a href="/orders/detail?id=' + o.id + '">View</a></td>' +
+          '</tr>';
+        }).join('');
+      },
+    }).catch(function (err) {
+      showError(document.getElementById('error'), err.message);
+    });
+  </script>
+</body>
+</html>

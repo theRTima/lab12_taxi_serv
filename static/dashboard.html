@@ -11,11 +11,7 @@
     <h1>Dashboard</h1>
     <p class="subtitle">Reports summary</p>
 
-    <nav class="nav">
-      <a href="/">Home</a>
-      <a href="/docs" target="_blank">API docs</a>
-      <a href="/admin/users">Admin users</a>
-    </nav>
+    <nav class="nav" id="nav"></nav>
 
     <div id="error" class="error" role="alert"></div>
 
@@ -55,14 +51,9 @@
     </section>
   </div>
 
+  <script src="/static/app.js"></script>
   <script>
-    const token = localStorage.getItem('access_token');
     const errorEl = document.getElementById('error');
-
-    function showError(msg) {
-      errorEl.textContent = msg;
-      errorEl.classList.add('visible');
-    }
 
     function fillTable(tbodyId, rows, cols) {
       const tbody = document.getElementById(tbodyId);
@@ -73,40 +64,26 @@
       tbody.innerHTML = rows.map(function (r) { return '<tr>' + r + '</tr>'; }).join('');
     }
 
-    if (!token) {
-      showError('Please sign in to view the dashboard.');
-      setTimeout(function () { window.location.href = '/login'; }, 1500);
-    } else {
-      fetch('/reports/summary', {
-        headers: { Authorization: 'Bearer ' + token },
-      })
-        .then(function (res) {
-          if (!res.ok) throw new Error('Failed to load report');
-          return res.json();
-        })
-        .then(function (data) {
-          document.getElementById('total-orders').textContent = data.total_orders;
-
-          fillTable('revenue-table',
-            data.revenue_by_tariff.map(function (r) {
-              return '<td>' + r.tariff_name + '</td><td>' + r.revenue.toFixed(2) + '</td>';
-            }), 2);
-
-          fillTable('drivers-table',
-            data.top_drivers.map(function (d) {
-              return '<td>' + d.driver_name + '</td><td>' + d.order_count + '</td>';
-            }), 2);
-
-          fillTable('days-table',
-            data.orders_per_day.map(function (d) {
-              return '<td>' + d.date + '</td><td>' + d.count + '</td>';
-            }), 2);
-        })
-        .catch(function () {
-          showError('Could not load report. Sign in again.');
-          localStorage.removeItem('access_token');
-        });
-    }
+    initPage({
+      onReady: async function () {
+        const data = await api('/reports/summary', { headers: authHeaders() });
+        document.getElementById('total-orders').textContent = data.total_orders;
+        fillTable('revenue-table',
+          data.revenue_by_tariff.map(function (r) {
+            return '<td>' + r.tariff_name + '</td><td>' + r.revenue.toFixed(2) + '</td>';
+          }), 2);
+        fillTable('drivers-table',
+          data.top_drivers.map(function (d) {
+            return '<td>' + d.driver_name + '</td><td>' + d.order_count + '</td>';
+          }), 2);
+        fillTable('days-table',
+          data.orders_per_day.map(function (d) {
+            return '<td>' + d.date + '</td><td>' + d.count + '</td>';
+          }), 2);
+      },
+    }).catch(function (err) {
+      showError(errorEl, err.message);
+    });
   </script>
 </body>
 </html>

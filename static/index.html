@@ -13,44 +13,33 @@
 
     <div id="user-info" class="user-info" hidden></div>
 
-    <button type="button" class="logout" id="logout-btn" hidden>Sign out</button>
+    <nav class="nav" id="nav" hidden></nav>
 
-    <nav class="nav" id="main-nav" hidden>
-      <a href="/dashboard">Dashboard</a>
-      <a href="/docs" target="_blank">API docs</a>
-      <a href="/admin/users" id="admin-link" hidden>Admin users</a>
-    </nav>
+    <button type="button" class="logout" id="logout-btn" hidden>Sign out</button>
 
     <p class="footer" id="auth-links">
       <a href="/login">Sign in</a> · <a href="/register">Register</a>
     </p>
   </div>
 
+  <script src="/static/app.js"></script>
   <script>
     const greeting = document.getElementById('greeting');
     const userInfo = document.getElementById('user-info');
     const logoutBtn = document.getElementById('logout-btn');
     const authLinks = document.getElementById('auth-links');
-    const mainNav = document.getElementById('main-nav');
-    const adminLink = document.getElementById('admin-link');
-    const token = localStorage.getItem('access_token');
+    const nav = document.getElementById('nav');
 
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', function () {
       localStorage.removeItem('access_token');
       window.location.reload();
     });
 
-    if (!token) {
+    if (!getToken()) {
       greeting.textContent = 'Welcome';
     } else {
-      fetch('/auth/me', {
-        headers: { Authorization: 'Bearer ' + token },
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error();
-          return res.json();
-        })
-        .then((user) => {
+      fetchMe()
+        .then(function (user) {
           greeting.textContent = 'Hello, ' + user.name;
           userInfo.hidden = false;
           userInfo.innerHTML =
@@ -58,10 +47,10 @@
             '<p><strong>Role:</strong> ' + user.role + '</p>';
           logoutBtn.hidden = false;
           authLinks.hidden = true;
-          mainNav.hidden = false;
-          if (user.role === 'admin') adminLink.hidden = false;
+          nav.hidden = false;
+          renderNav(nav, user);
         })
-        .catch(() => {
+        .catch(function () {
           localStorage.removeItem('access_token');
           greeting.textContent = 'Session expired';
         });

@@ -7,7 +7,12 @@ from app.auth import get_current_user, require_roles
 from app.database import get_db
 from app.models.driver import Driver
 from app.models.user import User, UserRole
-from app.schemas.driver import DriverCreate, DriverRead, DriverUpdate
+from app.schemas.driver import (
+    DriverAvailabilityUpdate,
+    DriverCreate,
+    DriverRead,
+    DriverUpdate,
+)
 
 router = APIRouter(prefix="/drivers", tags=["drivers"])
 
@@ -19,7 +24,38 @@ def _get_driver_or_404(db: Session, driver_id: int) -> Driver:
     return driver
 
 
-@router.get("", response_model=list[DriverRead])
+def _get_driver_for_user(db: Session, user: User) -> Driver:
+    driver = db.query(Driver).filter(Driver.user_id == user.id).first()
+    if driver is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Driver profile not found",
+        )
+    return driver
+
+
+@router.get("/me", response_model=DriverRead)
+def get_my_driver(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_roles(UserRole.DRIVER))],
+) -> Driver:
+    return _get_driver_for_user(db, current_user)
+
+
+@router.patch("/me", response_model=DriverRead)
+def update_my_availability(
+    payload: DriverAvailabilityUpdate,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_roles(UserRole.DRIVER))],
+) -> Driver:
+    driver = _get_driver_for_user(db, current_user)
+    driver.is_available = payload.is_available
+    db.commit()
+    db.refresh(driver)
+    return driver
+
+
+@router.get("/list", response_model=list[DriverRead])
 def list_drivers(
     db: Annotated[Session, Depends(get_db)],
     _: Annotated[User, Depends(get_current_user)],

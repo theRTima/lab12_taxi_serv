@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drivers — Taxi Service</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="page-wide">
+  <div class="card wide">
+    <h1>Drivers</h1>
+    <p class="subtitle" id="page-subtitle">Driver management</p>
+    <nav class="nav" id="nav"></nav>
+    <div id="error" class="error" role="alert"></div>
+    <div id="success" class="success" role="status"></div>
+
+    <section id="driver-panel" class="section hidden">
+      <h2>My driver profile</h2>
+      <div id="driver-missing" class="user-info hidden">
+        <p>No driver profile linked to your account yet.</p>
+        <p>Ask an administrator to create one for your user ID: <strong id="my-user-id"></strong></p>
+      </div>
+      <div id="driver-profile" class="hidden">
+        <div class="detail-grid" id="my-driver-info"></div>
+        <label class="checkbox-row">
+          <input type="checkbox" id="available-toggle"> Available for orders
+        </label>
+        <h2>My orders</h2>
+        <table class="data">
+          <thead>
+            <tr><th>ID</th><th>Route</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="driver-orders"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="admin-panel" class="section hidden">
+      <h2>Add driver</h2>
+      <form id="create-driver-form" class="detail-grid">
+        <label for="user_id">User ID (driver role)</label>
+        <input type="number" id="user_id" required min="1">
+        <label for="car">Car</label>
+        <input type="text" id="car" required maxlength="255" placeholder="Toyota Camry, white">
+        <label class="checkbox-row"><input type="checkbox" id="is_available" checked> Available</label>
+        <button type="submit">Create driver</button>
+      </form>
+      <h2>All drivers</h2>
+      <table class="data">
+        <thead>
+          <tr><th>ID</th><th>User ID</th><th>Car</th><th>Available</th><th>Edit</th></tr>
+        </thead>
+        <tbody id="drivers-table"></tbody>
+      </table>
+    </section>
+  </div>
+  <script src="/static/app.js"></script>
+  <script>
+    const errorEl = document.getElementById('error');
+    const successEl = document.getElementById('success');
+    let pageUser = null;
+
+    initPage({
+      onReady: async function (user) {
+        pageUser = user;
+        if (user.role === 'driver') {
+          document.getElementById('page-subtitle').textContent = 'Your driver panel';
+          document.getElementById('driver-panel').classList.remove('hidden');
+          await loadDriverPanel(user);
+        } else if (user.role === 'admin') {
+          document.getElementById('page-subtitle').textContent = 'Manage drivers';
+          document.getElementById('admin-panel').classList.remove('hidden');
+          await loadAdminDrivers();
+        } else {
+          showError(errorEl, 'Access denied — drivers page is for admin and driver roles only');
+        }
+      },
+    });
+
+    async function loadDriverPanel(user) {
+      document.getElementById('my-user-id').textContent = user.id;
+      try {
+        const driver = await api('/drivers/me', { headers: authHeaders() });
+        document.getElementById('driver-missing').classList.add('hidden');
+        document.getElementById('driver-profile').classList.remove('hidden');
+        document.getElementById('my-driver-info').innerHTML =
+          '<p><strong>Driver ID:</strong> ' + driver.id + '</p>' +
+          '<p><strong>Car:</strong> ' + driver.car + '</p>' +
+          '<p><strong>Available:</strong> ' + (driver.is_available ? 'Yes' : 'No') + '</p>';
+        document.getElementById('available-toggle').checked = driver.is_available;
+
+        const orders = await api('/orders/list', { headers: authHeaders() });
+        const tbody = document.getElementById('driver-orders');
+        if (!orders.length) {
+          tbody.innerHTML = '<tr><td colspan="4">No orders</td></tr>';
+          return;
+        }
+        tbody.innerHTML = orders.map(function (o) {
+          return '<tr><td>' + o.id + '</td><td>' + o.pickup + ' → ' + o.destination + '</td>' +
+            '<td>' + statusBadge(o.status) + '</td>' +
+            '<td><a href="/orders/detail?id=' + o.id + '">View</a></td></tr>';
+        }).join('');
+      } catch (err) {
+        if (err.status === 404) {
+          document.getElementById('driver-missing').classList.remove('hidden');
+          document.getElementById('driver-profile').classList.add('hidden');
+          return;
+        }
+        throw err;
+      }
+    }
+
+    document.getElementById('available-toggle').addEventListener('change', async function () {
+      if (!pageUser || pageUser.role !== 'driver') return;
+      try {
+        await api('/drivers/me', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ is_available: this.checked }),
+        });
+        showSuccess(successEl, 'Availability updated');
+        hideError(errorEl);
+      } catch (err) {
+        this.checked = !this.checked;
+        showError(errorEl, err.message);
+      }
+    });
+
+    async function loadAdminDrivers() {
+      const drivers = await api('/drivers/list', { headers: authHeaders() });
+      const tbody = document.getElementById('drivers-table');
+      if (!drivers || !drivers.length) {
+        tbody.innerHTML = '<tr><td colspan="5">No drivers yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = drivers.map(function (d) {
+        return '<tr data-id="' + d.id + '">' +
+          '<td>' + d.id + '</td><td>' + d.user_id + '</td><td class="car-cell">' + d.car + '</td>' +
+          '<td>' + (d.is_available ? 'Yes' : 'No') + '</td>' +
+          '<td><button type="button" class="btn-inline btn-secondary edit-btn">Edit</button></td></tr>';
+      }).join('');
+
+      tbody.querySelectorAll('.edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          const row = btn.closest('tr');
+          const id = row.dataset.id;
+          const car = prompt('Car model:', row.querySelector('.car-cell').textContent);
+          if (car === null) return;
+          const avail = confirm('Available for orders?');
+          try {
+            await api('/drivers/' + id, {
+              method: 'PATCH',
+              headers: authHeaders(),
+              body: JSON.stringify({ car: car, is_available: avail }),
+            });
+            showSuccess(successEl, 'Driver updated');
+            loadAdminDrivers();
+          } catch (err) {
+            showError(errorEl, err.message);
+          }
+        });
+      });
+    }
+
+    document.getElementById('create-driver-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      try {
+        await api('/drivers', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            user_id: parseInt(document.getElementById('user_id').value, 10),
+            car: document.getElementById('car').value,
+            is_available: document.getElementById('is_available').checked,
+          }),
+        });
+        showSuccess(successEl, 'Driver created');
+        e.target.reset();
+        document.getElementById('is_available').checked = true;
+        loadAdminDrivers();
+      } catch (err) {
+        showError(errorEl, err.message);
+      }
+    });
+  </script>
+</body>
+</html>

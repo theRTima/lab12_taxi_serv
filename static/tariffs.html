@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tariffs — Taxi Service</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="page-wide">
+  <div class="card wide">
+    <h1>Tariffs</h1>
+    <p class="subtitle">Manage pricing (admin)</p>
+    <nav class="nav" id="nav"></nav>
+    <div id="error" class="error" role="alert"></div>
+    <div id="success" class="success" role="status"></div>
+
+    <section class="section">
+      <h2>Add tariff</h2>
+      <form id="create-form">
+        <label for="name">Name</label>
+        <input type="text" id="name" required maxlength="100">
+        <label for="price">Price per km</label>
+        <input type="number" id="price" required min="0.01" step="0.01">
+        <button type="submit">Add tariff</button>
+      </form>
+    </section>
+
+    <section class="section">
+      <h2>All tariffs</h2>
+      <table class="data">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Price / km</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="tariffs-table"></tbody>
+      </table>
+    </section>
+  </div>
+  <script src="/static/app.js"></script>
+  <script>
+    const errorEl = document.getElementById('error');
+    const successEl = document.getElementById('success');
+
+    initPage({
+      onReady: async function (user) {
+        if (user.role !== 'admin') {
+          showError(errorEl, 'Admin access required');
+          document.getElementById('create-form').classList.add('hidden');
+          return;
+        }
+        await loadTariffsTable();
+      },
+    });
+
+    async function loadTariffsTable() {
+      const tariffs = await loadTariffs();
+      const tbody = document.getElementById('tariffs-table');
+      tbody.innerHTML = tariffs.map(function (t) {
+        return '<tr data-id="' + t.id + '">' +
+          '<td>' + t.id + '</td>' +
+          '<td class="name-cell">' + t.name + '</td>' +
+          '<td class="price-cell">' + t.price_per_km + '</td>' +
+          '<td class="btn-row">' +
+            '<button type="button" class="btn-inline btn-secondary edit-btn">Edit</button>' +
+            '<button type="button" class="btn-inline btn-danger del-btn">Delete</button>' +
+          '</td></tr>';
+      }).join('') || '<tr><td colspan="4">No tariffs</td></tr>';
+
+      tbody.querySelectorAll('.edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          const row = btn.closest('tr');
+          const id = row.dataset.id;
+          const name = prompt('Tariff name:', row.querySelector('.name-cell').textContent);
+          if (name === null) return;
+          const price = prompt('Price per km:', row.querySelector('.price-cell').textContent);
+          if (price === null) return;
+          try {
+            await api('/tariffs/' + id, {
+              method: 'PATCH',
+              headers: authHeaders(),
+              body: JSON.stringify({ name: name, price_per_km: parseFloat(price) }),
+            });
+            showSuccess(successEl, 'Tariff updated');
+            loadTariffsTable();
+          } catch (err) {
+            showError(errorEl, err.message);
+          }
+        });
+      });
+
+      tbody.querySelectorAll('.del-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          const id = btn.closest('tr').dataset.id;
+          if (!confirm('Delete this tariff?')) return;
+          try {
+            await api('/tariffs/' + id, { method: 'DELETE', headers: authHeaders() });
+            showSuccess(successEl, 'Tariff deleted');
+            loadTariffsTable();
+          } catch (err) {
+            showError(errorEl, err.message);
+          }
+        });
+      });
+    }
+
+    document.getElementById('create-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      try {
+        await api('/tariffs', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            name: document.getElementById('name').value,
+            price_per_km: parseFloat(document.getElementById('price').value),
+          }),
+        });
+        showSuccess(successEl, 'Tariff created');
+        e.target.reset();
+        loadTariffsTable();
+      } catch (err) {
+        showError(errorEl, err.message);
+      }
+    });
+  </script>
+</body>
+</html>

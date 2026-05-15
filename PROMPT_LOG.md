@@ -19,9 +19,14 @@ payments: create = client; read = owner or admin
 ADMIN ROUTER — routers/admin.py, all routes require require_role("admin"), it should list all users with roles plus a body: {role: "admin"|"client"|"driver"}
 REPORTS — routers/reports.py, require authenticated user - GET /reports/summary returns JSON of total orders, revenue by tariff, top drivers and orders per day of last 7 days
 DASHBOARD — follow project html style, show all 4 report metrics as plain HTML tables, add nav links to /docs, /admin/users."
-**Результат:** Дополнен интерфейс, добавлен функицонал отчета. Создан дашборд, ссылка на swagger докумнтацию. Админ может менять роли пользователей, просматривать список всех пользователей - это может только он. Для заказов пока только backend. Осталось создать UI.
+**Результат:** Дополнен интерфейс, добавлен функицонал отчета. Создан дашборд, ссылка на swagger докумнтацию. Админ может менять роли пользователей, просматривать список всех пользователей - это может только он. Для заказов пока только backend. Осталось дополнить UI.
+### Промпт 4
+**Инструмент:** Auto режим в Cursor.
+**Промпт:** "Lets finilize app by adding a UI for next elements:
+orders (booking,listing orders,details,canceling,driver status), driver(for admin - create and change drivers, for drivers - see assigned orders, toggle availability), tariffs(Admin: manage tariff list/prices; client: pick tariff when ordering. Create 3 tarrifs - simple, medium and lux), profile page (change password, edit name). Follow style of app htmls."
+**Результат:** Создал недостающий интерфейс для заказов, водителей, страницы профиля. При тестировании найден баг в приложении, даже если юзер водитель, при переходе на страницу водителя, спустя секунду выкидывает в форму логина. Осталось добавить интерфейс для оплаты заказа. Весь остальной функционал работает как предполагалось.
 ### Итого
 - Количество промптов: 
 - Что пришлось исправлять вручную:
-- Время: ~
+- Время: ~ 2 часа
 ---

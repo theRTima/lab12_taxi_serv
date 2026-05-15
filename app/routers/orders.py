@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user, require_roles
@@ -25,13 +26,17 @@ def _can_read_order(user: User, order: Order, db: Session) -> bool:
         return True
     if user.role == UserRole.CLIENT and order.client_id == user.id:
         return True
-    if user.role == UserRole.DRIVER and order.driver_id is not None:
+    if user.role == UserRole.DRIVER:
         driver = db.query(Driver).filter(Driver.user_id == user.id).first()
-        return driver is not None and order.driver_id == driver.id
+        if driver is None:
+            return False
+        if order.driver_id == driver.id:
+            return True
+        return order.driver_id is None and order.status == OrderStatus.PENDING
     return False
 
 
-@router.get("", response_model=list[OrderRead])
+@router.get("/list", response_model=list[OrderRead])
 def list_orders(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -43,7 +48,12 @@ def list_orders(
         driver = db.query(Driver).filter(Driver.user_id == current_user.id).first()
         if driver is None:
             return []
-        query = query.filter(Order.driver_id == driver.id)
+        query = query.filter(
+            or_(
+                Order.driver_id == driver.id,
+                (Order.driver_id.is_(None)) & (Order.status == OrderStatus.PENDING),
+            )
+        )
     return query.order_by(Order.created_at.desc()).all()
 
 
@@ -109,9 +119,20 @@ def update_order_status(
     order_id: int,
     payload: OrderStatusUpdate,
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[User, Depends(require_roles(UserRole.DRIVER, UserRole.ADMIN))],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> Order:
     order = _get_order_or_404(db, order_id)
+
+    if current_user.role == UserRole.CLIENT:
+        if order.client_id != current_user.id or payload.status != OrderStatus.CANCELLED:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        order.status = OrderStatus.CANCELLED
+        db.commit()
+        db.refresh(order)
+        return order
+
+    if current_user.role not in (UserRole.DRIVER, UserRole.ADMIN):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     if current_user.role == UserRole.DRIVER:
         driver = db.query(Driver).filter(Driver.user_id == current_user.id).first()
